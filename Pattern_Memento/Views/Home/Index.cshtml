@@ -1,84 +1,25 @@
-﻿
-@{
+﻿@{
     ViewBag.Title = "Index";
 }
-<script type="text/javascript">
-        window.addEventListener("load", init, false);
+<script src="~/Scripts/scriptCanvas.js" type="text/javascript"></script>
+<script src="~/Scripts/jquery-1.10.2.intellisense.js"></script>
+<p>
+    <label>
+        Color
+        <input id="color" type="color" name="bg" />
+    </label>
+</p>
 
-        var started = false, canvas, context;
-        var startX, startY;
-        var endX, endY;
-        var width, height;
+<div class="btn-group ">
+    <button onclick="selectCircle()" id="button_circle" type="button" class="btn btn-default">Circle</button>
+    <button onclick="selectRect()" id="button_rectangle" type="button" class="btn btn-default">Rectangle</button>
+</div>
+<div class="btn-group ">
+    <button onclick="cancel()" id="cancel" type="button" class="btn btn-default">Cancel</button>
+    <button onclick="restore()" id="restore" type="button" class="btn btn-default">Restore</button>
+</div>
+<br />
 
-        function init() {
-            canvas = document.getElementById("canvas");
-            context = canvas.getContext("2d");
-
-            canvas.addEventListener("mousemove", moveHandler, false);
-            canvas.addEventListener("mousedown", downHandler, false);
-            canvas.addEventListener("mouseup", upHandler, false);
-        }
-
-        // Получение координат мыши относительно элемента canvas
-        function getCoords(e) {
-            var x, y;
-
-            if (e.layerX || e.layerX == 0) { // Firefox
-                x = e.layerX;
-                y = e.layerY;
-            } else if (e.offsetX || e.offsetX == 0) {
-                x = e.offsetX;
-                y = e.offsetY;
-            }
-
-            return { x: x, y: y };
-        }
-
-        // Начало рисования.
-        function downHandler(e) {
-            context.beginPath();
-            startX = getCoords(e).x;
-            startY = getCoords(e).y;
-            context.moveTo(startX, startY);
-            started = true;
-        }
-
-        // Прекращение рисования.
-        function upHandler(e) {
-            started = false;
-        }
-        
-
-        // обработка движения указателя по элементу canvas
-        function moveHandler(e) {
-            endX = getCoords(e).x;
-            endY = getCoords(e).y;
-
-            if (started) {
-                context.clearRect(0, 0, canvas.width, canvas.height);
-                width = endX - startX;
-                height = endY - startY;
-
-                context.fillRect(startX, startY, width, height);
-                //context.fillRect(startX, startY, getCoords(e).x - startX, getCoords(e).y - startY);
-                context.stroke();
-            } else if (endX > startX && endY > startY && endX < width + startX && endY < height + startY) {
-                context.clearRect(0, 0, canvas.width, canvas.height);
-
-                context.fillRect(startX, startY, width, height);
-                context.strokeStyle = "red";
-                context.lineWidth = 5;
-                context.strokeRect(startX, startY, width, height);
-            } else if(width && height) {
-                context.clearRect(0, 0, canvas.width, canvas.height);
-
-                context.fillRect(startX, startY, width, height);
-                context.stroke();
-            }
-
-        }
-</script>
 <canvas id="canvas" width="1280" height="720" style="border: 1px solid black;">
     Браузер не поддерживает canvas
 </canvas>
-
