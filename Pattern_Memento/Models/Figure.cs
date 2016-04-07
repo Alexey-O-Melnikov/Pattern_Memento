@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Pattern_Memento.Models
 {
-    abstract class Figure
+    abstract public class Figure
     {
         public string Color { get; set; }
         public Point StartPoint { get; set; }
