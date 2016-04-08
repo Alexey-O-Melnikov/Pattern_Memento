@@ -24,34 +24,58 @@ function HistiryCanvas() {
 
 function Canvas() {
     this.figures = [];
-    this.addFigure = function (figure) {
-        this.figures.push(figure);
-    }
-    this.getCoords = function (e) {
-        var x = e.offsetX;
-        var y = e.offsetY;
-
-        return { x: x, y: y };
-    }
-    this.paintFigures = function () {
-        context.clearRect(0, 0, canvasElement.width, canvasElement.height);
-        if (this.figures.length > 0) {
-            for (var i = 0; i < this.figures.length; i++) {
-                this.figures[i].paint();
-            }
+}
+Canvas.prototype.addFigure = function (figure) {
+    for (var i = 0; i < this.figures.length; i++) {
+        if (this.figures[i] == figure) {
+            return;
         }
     }
-    this.paintActivFirure = function (x, y) {
-        this.paintFigures();
-        for (var i = this.figures.length - 1; i >= 0; i--) {
-            if (this.figures[i].insideMe(x, y)) {
-                this.figures[i].paintContour();
-                break;
-            }
-        }
+    this.figures.push(figure);
+}
+Canvas.prototype.getCoords = function (e) {
+    var x = e.offsetX;
+    var y = e.offsetY;
 
+    return { x: x, y: y };
+}
+Canvas.prototype.paintFigures = function () {
+    if (this.figures.length > 0) {
+        for (var i = 0; i < this.figures.length; i++) {
+            this.figures[i].paint();
+        }
     }
 }
+Canvas.prototype.activFirureIndex = function (x, y) {
+    for (var i = this.figures.length - 1; i >= 0; i--) {
+        if (this.figures[i].insideMe(x, y)) {
+            return i;
+        }
+    }
+}
+Canvas.prototype.activFirure = function (x, y) {
+    this.paintFigures();
+    return this.figures[this.activFirureIndex(x, y)];
+}
+Canvas.prototype.deleteFigure = function (x, y) {
+    this.figures.splice(this.activFirureIndex(x, y), 1);
+}
+Canvas.prototype.highlightedFigure = function (x, y) {
+    var tempFigure = this.activFirure(x, y);
+    if (tempFigure) {
+        this.deleteFigure(x, y);
+        this.addFigure(tempFigure);
+    }
+    this.activFirure(x, y).paintContour();
+}
+
+function Figure() {
+    this.type;
+    this.color;
+}
+Figure.prototype.paint = function () { };
+Figure.prototype.paintContour = function () { };
+Figure.prototype.insideMe = function (x, y) { };
 
 function Circle(x, y, r, color) {
     this.type = "circle";
@@ -59,20 +83,21 @@ function Circle(x, y, r, color) {
     this.y = y;
     this.r = r;
     this.color = color;
-    this.paint = function () {
-        artisan.drawCircle('canvas', this.x, this.y, this.r, this.color, 3, this.color)
+}
+Circle.prototype = new Figure();
+Circle.prototype.paint = function () {
+    artisan.drawCircle('canvas', this.x, this.y, this.r, this.color, 3, this.color)
+}
+Circle.prototype.paintContour = function () {
+    var fillStyle = "rgba(100,150,185,0)";
+    var strokeStyle = "red";
+    artisan.drawCircle('canvas', this.x, this.y, this.r, fillStyle, 3, strokeStyle)
+}
+Circle.prototype.insideMe = function (x, y) {
+    if (Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2) < Math.pow(this.r, 2)) {
+        return true;
     }
-    this.paintContour = function () {
-        var fillStyle = "rgba(100,150,185,0)";
-        var strokeStyle = "red";
-        artisan.drawCircle('canvas', this.x, this.y, this.r, fillStyle, 3, strokeStyle)
-    }
-    this.insideMe = function (x, y) {
-        if(Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2) < Math.pow(this.r, 2)){
-            return true;
-        }
-        return false;
-    }
+    return false;
 }
 
 function Rectangle(x, y, width, height, color) {
@@ -82,27 +107,29 @@ function Rectangle(x, y, width, height, color) {
     this.width = width;
     this.height = height;
     this.color = color;
-    this.paint = function () {
-        artisan.drawRectangle('canvas', this.x, this.y, this.width, this.height, this.color, 3, this.color);
+}
+Rectangle.prototype = new Figure();
+Rectangle.prototype.paint = function () {
+    artisan.drawRectangle('canvas', this.x, this.y, this.width, this.height, this.color, 3, this.color);
+}
+Rectangle.prototype.paintContour = function () {
+    var fillStyle = "rgba(0,0,0,0)";
+    var strokeStyle = "red";
+    artisan.drawRectangle('canvas', this.x, this.y, this.width, this.height, fillStyle, 3, strokeStyle);
+}
+Rectangle.prototype.insideMe = function (x, y) {
+    if (x > this.x && y > this.y && x < this.x + this.width && y < this.y + this.height) {
+        return true;
     }
-    this.paintContour = function () {
-        var fillStyle = "rgba(100,150,185,0)";
-        var strokeStyle = "red";
-        artisan.drawRectangle('canvas', this.x, this.y, this.width, this.height, fillStyle, 3, strokeStyle);
-    }
-    this.insideMe = function (x, y) {
-        if (x > this.x && y > this.y && x < this.x + this.width && y < this.y + this.height) {
-            return true;
-        }
-        return false;
-    }
+    return false;
 }
 
 $().ready(init);
 
 var started = false, context, canvasElement;
 var startX, startY;
-var figure, color;
+var figure = new Figure();
+var color;
 var canvas;
 var historyCanvas;
 
@@ -143,12 +170,16 @@ function restore() {
 
 // Начало рисования.
 function downHandler(e) {
-    context.beginPath();
     startX = canvas.getCoords(e).x;
     startY = canvas.getCoords(e).y;
-    context.moveTo(startX, startY);
-    color = $('#color').val();
-    started = true;
+    if (canvas.activFirureIndex(startX, startY) >= 0) {
+        canvas.highlightedFigure(startX, startY);
+    } else {
+        context.beginPath();
+        context.moveTo(startX, startY);
+        color = $('#color').val();
+        started = true;
+    }
 }
 
 // Прекращение рисования.
@@ -156,7 +187,7 @@ function upHandler(e) {
     started = false;
     if (figure) {
         canvas.addFigure(figure);
-        historyCanvas.saveState(canvas);
+        //historyCanvas.saveState(canvas);
     }
 }
 
@@ -178,10 +209,18 @@ function moveHandler(e) {
         else if (figure.type === "rectangle") {
             figure = new Rectangle(startX, startY, width, height, color);
         }
+
+        context.clearRect(0, 0, canvasElement.width, canvasElement.height);
         canvas.paintFigures();
         figure.paint();
-    } else if (canvas.figures.length > 0) {
-        canvas.paintActivFirure(endX, endY);
     }
+    //else if (canvas.figures.length > 0 && canvas.activFirure(endX, endY)) {
+    //    //canvas.highlightedFigure(endX, endY);
+    //    context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    //    canvas.activFirure(endX, endY).paintContour();
+    //}
 }
 
+function clickHandler(e) {
+    canvas.highlightedFigure(canvas.getCoords(e).x, canvas.getCoords(e).y);
+}
