@@ -2,10 +2,12 @@ function HistiryCanvas() {
     this.indexState = 0;
     this.canvases = [];
     this.saveState = function (can) {
-        if(this.indexState) {
+        if(this.indexState < this.canvases.length) {
             this.canvases.splice(this.indexState, this.canvases.length - this.indexState);
         }
-        this.canvases.push(can);
+        var clonCan = {};
+        Object.assign(clonCan, can);
+        this.canvases.push(clonCan);
         this.indexState++;
     }
     this.loadState = function (go) {
@@ -31,6 +33,24 @@ function Canvas() {
 
         return { x: x, y: y };
     }
+    this.paintFigures = function () {
+        context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        if (this.figures.length > 0) {
+            for (var i = 0; i < this.figures.length; i++) {
+                this.figures[i].paint();
+            }
+        }
+    }
+    this.paintActivFirure = function (x, y) {
+        this.paintFigures();
+        for (var i = this.figures.length - 1; i >= 0; i--) {
+            if (this.figures[i].insideMe(x, y)) {
+                this.figures[i].paintContour();
+                break;
+            }
+        }
+
+    }
 }
 
 function Circle(x, y, r, color) {
@@ -42,6 +62,17 @@ function Circle(x, y, r, color) {
     this.paint = function () {
         artisan.drawCircle('canvas', this.x, this.y, this.r, this.color, 3, this.color)
     }
+    this.paintContour = function () {
+        var fillStyle = "rgba(100,150,185,0)";
+        var strokeStyle = "red";
+        artisan.drawCircle('canvas', this.x, this.y, this.r, fillStyle, 3, strokeStyle)
+    }
+    this.insideMe = function (x, y) {
+        if(Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2) < Math.pow(this.r, 2)){
+            return true;
+        }
+        return false;
+    }
 }
 
 function Rectangle(x, y, width, height, color) {
@@ -52,18 +83,25 @@ function Rectangle(x, y, width, height, color) {
     this.height = height;
     this.color = color;
     this.paint = function () {
-        line_width = 3;
-        stroke_color = this.color;
-        artisan.drawRectangle('canvas', this.x, this.y, this.width, this.height, this.color, line_width, stroke_color);
+        artisan.drawRectangle('canvas', this.x, this.y, this.width, this.height, this.color, 3, this.color);
     }
-
+    this.paintContour = function () {
+        var fillStyle = "rgba(100,150,185,0)";
+        var strokeStyle = "red";
+        artisan.drawRectangle('canvas', this.x, this.y, this.width, this.height, fillStyle, 3, strokeStyle);
+    }
+    this.insideMe = function (x, y) {
+        if (x > this.x && y > this.y && x < this.x + this.width && y < this.y + this.height) {
+            return true;
+        }
+        return false;
+    }
 }
 
 $().ready(init);
 
 var started = false, context, canvasElement;
 var startX, startY;
-var endX, endY;
 var figure, color;
 var canvas;
 var historyCanvas;
@@ -116,17 +154,17 @@ function downHandler(e) {
 // Прекращение рисования.
 function upHandler(e) {
     started = false;
-    canvas.addFigure(figure);
-    historyCanvas.saveState(canvas);
+    if (figure) {
+        canvas.addFigure(figure);
+        historyCanvas.saveState(canvas);
+    }
 }
 
 // обработка движения указателя по элементу canvas
 function moveHandler(e) {
-    endX = canvas.getCoords(e).x;
-    endY = canvas.getCoords(e).y;
+    var endX = canvas.getCoords(e).x;
+    var endY = canvas.getCoords(e).y;
     if (started) {
-        context.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
         var width = endX - startX;
         var height = endY - startY;
 
@@ -140,19 +178,10 @@ function moveHandler(e) {
         else if (figure.type === "rectangle") {
             figure = new Rectangle(startX, startY, width, height, color);
         }
-
-        if (canvas.figures.length > 0) {
-            for (var i = 0; i < canvas.figures.length; i++) {
-                canvas.figures[i].paint();
-            }
-        }      
+        canvas.paintFigures();
         figure.paint();
-
-        context.stroke();
-    } /*else if (endX > startX && endY > startY && endX < width + startX && endY < height + startY) {
-        context.strokeStyle = "red";
-        context.lineWidth = 3;
-        context.strokeRect(startX, startY, width, height);
-    }*/
+    } else if (canvas.figures.length > 0) {
+        canvas.paintActivFirure(endX, endY);
+    }
 }
 
