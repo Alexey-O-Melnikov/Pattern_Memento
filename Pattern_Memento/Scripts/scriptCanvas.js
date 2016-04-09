@@ -139,8 +139,10 @@ Rectangle.prototype.insideMe = function (x, y) {
 
 $().ready(init);
 
-var started = false, context, canvasElement;
+var started = false, took = false;
+var context, canvasElement;
 var startX, startY;
+var dx, dy;
 var figure = new Figure();
 var color;
 var canvas;
@@ -193,20 +195,22 @@ function delet() {
 
 //изменяем цвет
 function changeColor(){
+    figure = canvas.selectedFigure;
     canvas.deleteLastFigure();
     color = $('#color').val();
-    if (canvas.selectedFigure.type === "circle") {
-        figure = new Circle(canvas.selectedFigure.x, canvas.selectedFigure.y, canvas.selectedFigure.r, color);
+    if (figure.type === "circle") {
+        figure = new Circle(figure.x, figure.y, figure.r, color);
     }
-    if (canvas.selectedFigure.type === "rectangle") {
-        figure = new Rectangle(canvas.selectedFigure.x, canvas.selectedFigure.y, canvas.selectedFigure.width, canvas.selectedFigure.height, color);
+    if (figure.type === "rectangle") {
+        figure = new Rectangle(figure.x, figure.y, figure.width, figure.height, color);
     }
     if (figure) {
         canvas.addFigure(figure);
         //historyCanvas.saveState(canvas);
     }
     canvas.paintFigures();
-    canvas.activFirure(figure.x, figure.y).paintContour();
+    figure.paint();
+    figure.paintContour();
 }
 
 // Начало рисования.
@@ -215,6 +219,12 @@ function downHandler(e) {
     startY = canvas.getCoords(e).y;
     if (canvas.activFirureIndex(startX, startY) >= 0) {
         canvas.highlightedFigure(startX, startY);
+
+        figure = canvas.selectedFigure;
+        canvas.deleteLastFigure();
+        dx = startX - figure.x;
+        dy = startY - figure.y;
+        took = true;
     } else {
         context.beginPath();
         context.moveTo(startX, startY);
@@ -226,6 +236,8 @@ function downHandler(e) {
 // Прекращение рисования.
 function upHandler(e) {
     started = false;
+    took = false;
+    canvas.selectedFigure = figure;
     if (figure) {
         canvas.addFigure(figure);
         //historyCanvas.saveState(canvas);
@@ -253,6 +265,20 @@ function moveHandler(e) {
 
         canvas.paintFigures();
         figure.paint();
+        figure.paintContour();
+    }
+    else if (took) {
+
+        if (figure.type === "circle") {
+            figure = new Circle(endX - dx, endY - dy, figure.r, figure.color);
+        }
+        if (figure.type === "rectangle") {
+            figure = new Rectangle(endX - dx, endY - dy, figure.width, figure.height, figure.color);
+        }
+
+        canvas.paintFigures();
+        figure.paint();
+        figure.paintContour();
     }
     //else if (canvas.figures.length > 0 && canvas.activFirure(endX, endY)) {
     //    //canvas.highlightedFigure(endX, endY);

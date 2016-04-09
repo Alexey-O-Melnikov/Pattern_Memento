@@ -1,5 +1,4 @@
-﻿@*@model Pattern_Memento.Models.Canvas*@
-@{
+﻿@{
     ViewBag.Title = "Index";
 }
 <script src="~/Scripts/scriptCanvas.js" type="text/javascript"></script>
@@ -9,7 +8,6 @@
         <input onchange="changeColor()" id="color" type="color" name="bg" />
     </label>
 </p>
-
 <div class="btn-group ">
     <button onclick="selectCircle()" id="button_circle" type="button" class="btn btn-default">Circle</button>
     <button onclick="selectRect()" id="button_rectangle" type="button" class="btn btn-default">Rectangle</button>
@@ -19,10 +17,7 @@
     <button onclick="cancel()" id="cancel" type="button" class="btn btn-default">Cancel</button>
     <button onclick="restore()" id="restore" type="button" class="btn btn-default">Restore</button>
 </div>
-
 <br />
-
-
 <canvas id="canvas" width="1280" height="720" style="border: 1px solid black;">
     Браузер не поддерживает canvas
 </canvas>
