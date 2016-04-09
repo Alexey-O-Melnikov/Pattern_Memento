@@ -105,7 +105,7 @@ Circle.prototype.paintContour = function () {
     artisan.drawCircle('canvas', this.x, this.y, this.r, fillStyle, 3, strokeStyle)
 }
 Circle.prototype.insideMe = function (x, y) {
-    if (Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2) < Math.pow(this.r, 2)) {
+    if (Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2) <= Math.pow(this.r, 2)) {
         return true;
     }
     return false;
@@ -189,6 +189,24 @@ function restore() {
 function delet() {
     canvas.deleteLastFigure();
     canvas.paintFigures();
+}
+
+//изменяем цвет
+function changeColor(){
+    canvas.deleteLastFigure();
+    color = $('#color').val();
+    if (canvas.selectedFigure.type === "circle") {
+        figure = new Circle(canvas.selectedFigure.x, canvas.selectedFigure.y, canvas.selectedFigure.r, color);
+    }
+    if (canvas.selectedFigure.type === "rectangle") {
+        figure = new Rectangle(canvas.selectedFigure.x, canvas.selectedFigure.y, canvas.selectedFigure.width, canvas.selectedFigure.height, color);
+    }
+    if (figure) {
+        canvas.addFigure(figure);
+        //historyCanvas.saveState(canvas);
+    }
+    canvas.paintFigures();
+    canvas.activFirure(figure.x, figure.y).paintContour();
 }
 
 // Начало рисования.
