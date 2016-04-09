@@ -1,3 +1,4 @@
+//История изменения поля
 function HistiryCanvas() {
     this.indexState = 0;
     this.canvases = [];
@@ -22,8 +23,10 @@ function HistiryCanvas() {
     }
 }
 
+//Поле для рисования
 function Canvas() {
     this.figures = [];
+    this.selectedFigure = new Figure();
 }
 Canvas.prototype.addFigure = function (figure) {
     for (var i = 0; i < this.figures.length; i++) {
@@ -40,6 +43,7 @@ Canvas.prototype.getCoords = function (e) {
     return { x: x, y: y };
 }
 Canvas.prototype.paintFigures = function () {
+    context.clearRect(0, 0, canvasElement.width, canvasElement.height);
     if (this.figures.length > 0) {
         for (var i = 0; i < this.figures.length; i++) {
             this.figures[i].paint();
@@ -54,29 +58,36 @@ Canvas.prototype.activFirureIndex = function (x, y) {
     }
 }
 Canvas.prototype.activFirure = function (x, y) {
-    this.paintFigures();
     return this.figures[this.activFirureIndex(x, y)];
 }
 Canvas.prototype.deleteFigure = function (x, y) {
     this.figures.splice(this.activFirureIndex(x, y), 1);
 }
+Canvas.prototype.deleteLastFigure = function () {
+    this.figures.splice(this.figures.length - 1, 1);
+}
 Canvas.prototype.highlightedFigure = function (x, y) {
-    var tempFigure = this.activFirure(x, y);
-    if (tempFigure) {
+    this.selectedFigure = this.activFirure(x, y);
+    if (this.selectedFigure) {
         this.deleteFigure(x, y);
-        this.addFigure(tempFigure);
+        this.addFigure(this.selectedFigure);
     }
+    this.paintFigures();
     this.activFirure(x, y).paintContour();
 }
 
+//Абстрактная фигура
 function Figure() {
     this.type;
     this.color;
+    this.x;
+    this.y;
 }
 Figure.prototype.paint = function () { };
 Figure.prototype.paintContour = function () { };
 Figure.prototype.insideMe = function (x, y) { };
 
+//Круг
 function Circle(x, y, r, color) {
     this.type = "circle";
     this.x = x;
@@ -100,6 +111,7 @@ Circle.prototype.insideMe = function (x, y) {
     return false;
 }
 
+//Прямоугольник
 function Rectangle(x, y, width, height, color) {
     this.type = "rectangle";
     this.x = x;
@@ -118,11 +130,12 @@ Rectangle.prototype.paintContour = function () {
     artisan.drawRectangle('canvas', this.x, this.y, this.width, this.height, fillStyle, 3, strokeStyle);
 }
 Rectangle.prototype.insideMe = function (x, y) {
-    if (x > this.x && y > this.y && x < this.x + this.width && y < this.y + this.height) {
+    if (x >= this.x && y >= this.y && x < this.x + this.width && y < this.y + this.height) {
         return true;
     }
     return false;
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 $().ready(init);
 
@@ -146,14 +159,17 @@ function init() {
     canvas = new Canvas();
 }
 
+//рисуем круг
 function selectCircle() {
     figure = new Circle();
 }
 
+//рисуем прямугольник
 function selectRect() {
     figure = new Rectangle();
 }
 
+//отмена действия
 function cancel() {
     canvas = historyCanvas.loadState("cancel");
     for (var i = 0; i < canvas.figures.length; i++) {
@@ -161,11 +177,18 @@ function cancel() {
     }
 }
 
+//восстановление действия
 function restore() {
     canvas = historyCanvas.loadState("restore");
     for (var i = 0; i < canvas.figures.length; i++) {
         canvas.figures[i].paint();
     }
+}
+
+//удаление фигуры
+function delet() {
+    canvas.deleteLastFigure();
+    canvas.paintFigures();
 }
 
 // Начало рисования.
@@ -210,7 +233,6 @@ function moveHandler(e) {
             figure = new Rectangle(startX, startY, width, height, color);
         }
 
-        context.clearRect(0, 0, canvasElement.width, canvasElement.height);
         canvas.paintFigures();
         figure.paint();
     }
@@ -219,8 +241,4 @@ function moveHandler(e) {
     //    context.clearRect(0, 0, canvasElement.width, canvasElement.height);
     //    canvas.activFirure(endX, endY).paintContour();
     //}
-}
-
-function clickHandler(e) {
-    canvas.highlightedFigure(canvas.getCoords(e).x, canvas.getCoords(e).y);
 }
