@@ -2,13 +2,14 @@
 function HistiryCanvas() {
     this.indexState = 0;
     this.canvases = [];
+    this.clone = function (obj) {
+        return jQuery.extend(true, {}, obj);
+    }
     this.saveState = function (can) {
         if(this.indexState < this.canvases.length) {
             this.canvases.splice(this.indexState, this.canvases.length - this.indexState);
         }
-        var clonCan = {};
-        Object.assign(clonCan, can);
-        this.canvases.push(clonCan);
+        this.canvases.push(this.clone(can));
         this.indexState++;
     }
     this.loadState = function (go) {
@@ -18,8 +19,7 @@ function HistiryCanvas() {
         else if (go === "restore" && this.indexState < this.canvases.length) {
             this.indexState++;
         }
-
-        return this.canvases[this.indexState - 1];
+        return this.clone(this.canvases[this.indexState - 1]);
     }
 }
 
@@ -135,6 +135,7 @@ Rectangle.prototype.insideMe = function (x, y) {
     }
     return false;
 }
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 $().ready(init);
@@ -148,7 +149,6 @@ var color;
 var canvas;
 var historyCanvas;
 
-
 function init() {
     canvasElement = $('canvas').get(0);
     context = canvasElement.getContext("2d");
@@ -159,6 +159,7 @@ function init() {
 
     historyCanvas = new HistiryCanvas();
     canvas = new Canvas();
+    historyCanvas.saveState(canvas);
 }
 
 //рисуем круг
@@ -174,22 +175,21 @@ function selectRect() {
 //отмена действия
 function cancel() {
     canvas = historyCanvas.loadState("cancel");
-    for (var i = 0; i < canvas.figures.length; i++) {
-        canvas.figures[i].paint();
-    }
+    canvas.paintFigures();
+    canvas.selectedFigure.paintContour();
 }
 
 //восстановление действия
 function restore() {
     canvas = historyCanvas.loadState("restore");
-    for (var i = 0; i < canvas.figures.length; i++) {
-        canvas.figures[i].paint();
-    }
+    canvas.paintFigures();
+    canvas.selectedFigure.paintContour();
 }
 
 //удаление фигуры
 function delet() {
     canvas.deleteLastFigure();
+    historyCanvas.loadState(canvas);
     canvas.paintFigures();
 }
 
@@ -206,7 +206,7 @@ function changeColor(){
     }
     if (figure) {
         canvas.addFigure(figure);
-        //historyCanvas.saveState(canvas);
+        historyCanvas.saveState(canvas);
     }
     canvas.paintFigures();
     figure.paint();
@@ -240,7 +240,7 @@ function upHandler(e) {
     canvas.selectedFigure = figure;
     if (figure) {
         canvas.addFigure(figure);
-        //historyCanvas.saveState(canvas);
+        historyCanvas.saveState(canvas);
     }
 }
 
